@@ -1,0 +1,66 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Build system output (Gradle / Android)
+.gradle/
+**/build/
+**/out/
+
+# Kotlin compiler cache (Kotlin 2.x+)
+.kotlin/
+
+# Android build artifacts
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Local machine configuration
+local.properties
+**/local.properties
+
+# Android Studio / IntelliJ project files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Android Studio misc
+captures/
+.navigation/
+
+# Native / external builds
+.externalNativeBuild/
+.cxx/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*~
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Keystores (uncomment if you do NOT want them in git)
+#*.jks
+#*.keystore
+
+# Google/Firebase config (ignore if it contains sensitive data)
+google-services.json
+app/google-services.json
