@@ -1,24 +1,35 @@
 package com.example.storyvision_client.ui.projects
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.storyvision_client.data.remote.ProjectDto
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectListScreen(
     viewModel: ProjectListViewModel,
     onOpenProject: (ProjectDto) -> Unit,
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit,
     onOpenAccount: () -> Unit,
     onUnauthorized: () -> Unit
 ) {
@@ -34,75 +45,148 @@ fun ProjectListScreen(
         viewModel.loadProjects(onUnauthorized)
     }
 
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Выбор проекта") },
+                title = {
+                    Text(
+                        text = "Проекты",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                navigationIcon = {
+                    // Логотип приложения (опционально)
+                    Icon(
+                        imageVector = Icons.Filled.Folder,
+                        contentDescription = null,
+                        modifier = Modifier.padding(start = 8.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
                 actions = {
+                    // Кнопка переключения темы
+                    IconButton(onClick = { onThemeChange(!isDarkTheme) }) {
+                        Icon(
+                            imageVector = if (isDarkTheme) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                            contentDescription = "Сменить тему"
+                        )
+                    }
+
+                    // Кнопка аккаунта
                     IconButton(onClick = onOpenAccount) {
                         Icon(
                             imageVector = Icons.Filled.AccountCircle,
-                            contentDescription = "Аккаунт"
+                            contentDescription = "Аккаунт",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Filled.Add, contentDescription = "Создать проект")
-            }
+        }
+,
+                floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showCreateDialog = true },
+                icon = { Icon(Icons.Filled.Add, contentDescription = "Создать проект") },
+                text = { Text("Новый проект") },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .padding(16.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             when {
-                state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                state.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = state.error ?: "", color = MaterialTheme.colorScheme.error)
+                state.isLoading -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
                 }
-                else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(state.projects) { project ->
-                        ProjectCard(
-                            project = project,
-                            onOpen = { onOpenProject(project) },
-                            onShowDetails = { selectedProject = project }
+
+                state.error != null -> Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
                         )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Ошибка",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(text = state.error ?: "")
+                        }
+                    }
+                }
+
+                else -> {
+                    if (state.projects.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "У вас пока нет проектов",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "Создайте первый проект, чтобы начать работу.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(state.projects) { project ->
+                                ProjectCard(
+                                    project = project,
+                                    onOpen = { onOpenProject(project) },
+                                    onShowDetails = { selectedProject = project }
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            // Модальное окно с подробной инфой о проекте
             val project = selectedProject
             if (project != null) {
-                AlertDialog(
-                    onDismissRequest = { selectedProject = null },
-                    title = { Text(project.name) },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Описание: ${project.description}")
-                            Text("Владелец: ${project.owner_name ?: ""}")
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { selectedProject = null }) { Text("Закрыть") }
-                    },
-                    dismissButton = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = { /* TODO: редактировать */ }) { Text("Редактировать") }
-                            TextButton(onClick = { /* TODO: удалить */ }) { Text("Удалить") }
-                            TextButton(onClick = { /* TODO: добавить участника */ }) { Text("Добавить участника") }
-                        }
-                    }
-                )
+                ProjectDetailsDialog(project = project, onDismiss = { selectedProject = null})
             }
         }
 
-        // Диалог создания проекта
         if (showCreateDialog) {
             AlertDialog(
                 onDismissRequest = {
@@ -111,9 +195,14 @@ fun ProjectListScreen(
                     projectDescription = ""
                     createError = null
                 },
-                title = { Text("Создать проект") },
+                title = {
+                    Text(
+                        text = "Создать проект",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(
                             value = projectName,
                             onValueChange = { projectName = it },
@@ -123,12 +212,14 @@ fun ProjectListScreen(
                         OutlinedTextField(
                             value = projectDescription,
                             onValueChange = { projectDescription = it },
-                            label = { Text("Описание") }
+                            label = { Text("Описание") },
+                            minLines = 2
                         )
                         if (createError != null) {
                             Text(
                                 text = createError ?: "",
-                                color = MaterialTheme.colorScheme.error
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
@@ -164,8 +255,11 @@ fun ProjectListScreen(
                         },
                         enabled = !isCreateLoading
                     ) {
-                        if (isCreateLoading) CircularProgressIndicator(Modifier.size(18.dp))
-                        else Text("Создать")
+                        if (isCreateLoading) {
+                            CircularProgressIndicator(Modifier.size(18.dp))
+                        } else {
+                            Text("Создать")
+                        }
                     }
                 },
                 dismissButton = {
@@ -174,29 +268,50 @@ fun ProjectListScreen(
                         projectName = ""
                         projectDescription = ""
                         createError = null
-                    }) { Text("Отмена") }
+                    }) {
+                        Text("Отмена")
+                    }
                 }
             )
         }
     }
 }
-
 @Composable
 private fun ProjectCard(
     project: ProjectDto,
     onOpen: () -> Unit,
     onShowDetails: () -> Unit
 ) {
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onShowDetails() }
+            .clickable { onShowDetails() },
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+        )
     ) {
         Row(
             modifier = Modifier
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = project.name.firstOrNull()?.uppercase() ?: "?",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(12.dp))
+
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -204,12 +319,15 @@ private fun ProjectCard(
                     text = project.name,
                     style = MaterialTheme.typography.titleMedium
                 )
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = project.owner_name ?: "Not owner",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = project.owner_name ?: "Нет владельца",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Button(onClick = onOpen) {
+
+            FilledTonalButton(onClick = onOpen) {
                 Text("Открыть")
             }
         }

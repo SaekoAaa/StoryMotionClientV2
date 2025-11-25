@@ -1,11 +1,15 @@
 package com.example.storyvision_client
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
@@ -30,6 +34,9 @@ import com.example.storyvision_client.ui.navigation.RegisterRoute
 import com.example.storyvision_client.ui.projects.ProjectListScreen
 import com.example.storyvision_client.ui.projects.ProjectListViewModel
 import com.example.storyvision_client.ui.projects.ProjectListViewModelFactory
+import com.example.storyvision_client.ui.theme.AppTheme
+import androidx.core.content.edit
+
 
 fun debugStack(backStack: MutableList<Any>, source: String) {
     println("NAVIGATION [$source]: backStack = ${backStack.toList()}")
@@ -55,6 +62,9 @@ class MainActivity : ComponentActivity() {
         } else {
             LoginRoute
         }
+        val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+
+
         setContent {
             val authViewModel: AuthViewModel = viewModel(
                 factory = AuthViewModelFactory(repository)
@@ -68,7 +78,10 @@ class MainActivity : ComponentActivity() {
             val backStack = remember { mutableStateListOf<Any>(startKey) }
             debugStack(backStack, "1")
             println("Custom: $startKey, $accessToken, $refreshToken")
-            MaterialTheme {
+            var isDarkTheme by remember {
+                mutableStateOf(prefs.getBoolean("dark_theme", false))
+            }
+            AppTheme(darkTheme = isDarkTheme) {
                 Surface {
                     NavDisplay(
                         backStack = backStack,
@@ -120,6 +133,11 @@ class MainActivity : ComponentActivity() {
                                         onOpenAccount = {
                                             backStack.add(AccountRoute)
                                         },
+                                        onThemeChange = { newValue ->
+                                            isDarkTheme = newValue
+                                            prefs.edit { putBoolean("dark_theme", newValue) }
+                                        },
+                                        isDarkTheme = isDarkTheme
                                     )
                                 }
 
@@ -131,6 +149,11 @@ class MainActivity : ComponentActivity() {
                                         projectName = key.name,
                                         entitiesRepo = entitiesRepository,
                                         importRepo = importRepository,
+                                        isDarkTheme = isDarkTheme,
+                                        onThemeChange = { newValue ->
+                                            isDarkTheme = newValue
+                                            prefs.edit { putBoolean("dark_theme", newValue) }
+                                        },
                                         onOpenAccount = { backStack.add(AccountRoute) },
                                         onUnauthorized = {
                                             backStack.clear()
@@ -145,6 +168,9 @@ class MainActivity : ComponentActivity() {
                                         onBackToLogin = {
                                             backStack.clear()
                                             backStack.add(LoginRoute)
+                                        },
+                                        getBack = {
+                                            backStack.remove(AccountRoute)
                                         }
                                     )
                                 }

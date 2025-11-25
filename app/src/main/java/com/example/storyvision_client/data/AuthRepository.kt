@@ -183,7 +183,9 @@ class AuthRepository(
     }
 
     suspend fun logout(): AuthResult<Unit> {
-        return authorizedCall { token -> api.logout(token) }
+        val result = authorizedCall { token -> api.logout(token) }
+        tokenStorage.clearTokens()
+        return result
     }
 
     suspend fun getProjects(): AuthResult<List<ProjectDto>> {

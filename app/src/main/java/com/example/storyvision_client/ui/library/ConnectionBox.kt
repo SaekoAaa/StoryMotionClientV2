@@ -6,20 +6,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,51 +23,98 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.storyvision_client.data.entities.CharacterDto
 import com.example.storyvision_client.data.entities.ConnectionDto
-import com.example.storyvision_client.data.entities.EntitiesRepository
 @Composable
 fun ConnectionBox(conn: ConnectionDto, highlightId: String) {
-    // зелёный для Character, синий для Event
-    val leftColor = if (conn.from_type == "Character") Color(0xFFD0F5D7) else Color(0xFFE3F0FC)
-    val rightColor = if (conn.to_type == "Character") Color(0xFFD0F5D7) else Color(0xFFE3F0FC)
+    // Используем цвета из Material 3 theme, которые автоматически меняются
+    val characterColor = MaterialTheme.colorScheme.primaryContainer
+    val eventColor = MaterialTheme.colorScheme.secondaryContainer
+
+    val leftColor = if (conn.from_type == "Character") characterColor else eventColor
+    val rightColor = if (conn.to_type == "Character") characterColor else eventColor
+
+    val leftTextColor = if (conn.from_type == "Character")
+        MaterialTheme.colorScheme.onPrimaryContainer
+    else
+        MaterialTheme.colorScheme.onSecondaryContainer
+
+    val rightTextColor = if (conn.to_type == "Character")
+        MaterialTheme.colorScheme.onPrimaryContainer
+    else
+        MaterialTheme.colorScheme.onSecondaryContainer
 
     val arrowIcon = Icons.AutoMirrored.Filled.ArrowForward
 
-    // кто "основной"? выравниваем по highlightId
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 4.dp)
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxWidth()
     ) {
-        Box(
-            Modifier
-                .background(leftColor, shape = RoundedCornerShape(8.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+        // Left entity box
+        Surface(
+            color = leftColor,
+            shape = RoundedCornerShape(8.dp),
+            tonalElevation = if (conn.from_entity_id == highlightId) 4.dp else 0.dp
         ) {
-            Column {
-                Text(conn.from_name, fontWeight = if (conn.from_entity_id == highlightId) FontWeight.Bold else FontWeight.Normal)
-                Text(conn.from_type, fontSize = 12.sp)
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = conn.from_name,
+                    fontWeight = if (conn.from_entity_id == highlightId) FontWeight.Bold else FontWeight.Normal,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = leftTextColor
+                )
+                Text(
+                    text = conn.from_type,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = leftTextColor.copy(alpha = 0.7f)
+                )
             }
         }
-        Spacer(Modifier.width(6.dp))
-        Icon(arrowIcon, contentDescription = null)
-        Spacer(Modifier.width(6.dp))
-        Box(
-            Modifier
-                .background(rightColor, shape = RoundedCornerShape(8.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Column {
-                Text(conn.to_name, fontWeight = if (conn.to_entity_id == highlightId) FontWeight.Bold else FontWeight.Normal)
-                Text(conn.to_type, fontSize = 12.sp)
-            }
-        }
+
         Spacer(Modifier.width(8.dp))
+
+        Icon(
+            imageVector = arrowIcon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+
+        Spacer(Modifier.width(8.dp))
+
+        // Right entity box
+        Surface(
+            color = rightColor,
+            shape = RoundedCornerShape(8.dp),
+            tonalElevation = if (conn.to_entity_id == highlightId) 4.dp else 0.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = conn.to_name,
+                    fontWeight = if (conn.to_entity_id == highlightId) FontWeight.Bold else FontWeight.Normal,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = rightTextColor
+                )
+                Text(
+                    text = conn.to_type,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = rightTextColor.copy(alpha = 0.7f)
+                )
+            }
+        }
+
+        Spacer(Modifier.width(12.dp))
+
         Text(
-            conn.relation_type,
+            text = conn.relation_type,
             fontStyle = FontStyle.Italic,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterVertically)
         )
     }
