@@ -70,7 +70,9 @@ fun LibraryPanel(
                             viewModel.load(
                                 state.selectedType, state.page + 1, 10, onUnauthorized
                             )
-                        }
+                        },
+                        onSearchChange = viewModel::onSearchQueryChange,
+                        onSortChange = viewModel::onSortOptionChange
                     )
                 }
             }

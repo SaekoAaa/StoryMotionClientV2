@@ -29,9 +29,20 @@ data class LibraryUiState(
     val events: List<EventDto> = emptyList(),
     val relations: List<RelationDto> = emptyList(),
     val page: Int = 1,
-    val hasMore: Boolean = false
-)
+    val hasMore: Boolean = false,
 
+    val allCharacters: List<CharacterDto> = emptyList(),
+    val allEvents: List<EventDto> = emptyList(),
+    val allRelations: List<RelationDto> = emptyList(),
+
+
+    val searchQuery: String = "",
+    val sortOption: SortOption = SortOption.NAME_ASC
+)
+enum class SortOption(val label: String) {
+    NAME_ASC("По имени (А–Я)"),
+    NAME_DESC("По имени (Я–А)")
+}
 class LibraryViewModel(
     private val repository: EntitiesRepository,
     private val projectId: Long
@@ -47,9 +58,9 @@ class LibraryViewModel(
                     when (val response = repository.getCharacters(projectId, page, perPage)) {
                         is AuthResult.Success -> _state.value = _state.value.copy(
                             isLoading = false,
-                            characters = response.data.characters,
-                            events = emptyList(),
-                            relations = emptyList(),
+                            allCharacters = response.data.characters,
+                            allEvents = emptyList(),
+                            allRelations = emptyList(),
                             page = page,
                             hasMore = response.data.has_more,
                             error = null
@@ -61,9 +72,9 @@ class LibraryViewModel(
                     when (val response = repository.getEvents(projectId, page, perPage)) {
                         is AuthResult.Success -> _state.value = _state.value.copy(
                             isLoading = false,
-                            characters = emptyList(),
-                            events = response.data.items,
-                            relations = emptyList(),
+                            allCharacters = emptyList(),
+                            allEvents = response.data.items,
+                            allRelations = emptyList(),
                             page = page,
                             hasMore = response.data.has_more,
                             error = null
@@ -75,9 +86,9 @@ class LibraryViewModel(
                     when (val response = repository.getRelations(projectId, page, perPage)) {
                         is AuthResult.Success -> _state.value = _state.value.copy(
                             isLoading = false,
-                            characters = emptyList(),
-                            events = emptyList(),
-                            relations = response.data.items,
+                            allCharacters = emptyList(),
+                            allEvents = emptyList(),
+                            allRelations = response.data.items,
                             page = page,
                             hasMore = response.data.has_more,
                             error = null
@@ -86,6 +97,7 @@ class LibraryViewModel(
                     }
                 }
             }
+            applyFilterAndSort()
         }
     }
 
@@ -178,4 +190,77 @@ class LibraryViewModel(
             }
         }
     }
+    fun onSearchQueryChange(query: String) {
+        _state.value = _state.value.copy(searchQuery = query)
+        applyFilterAndSort()
+    }
+
+    fun onSortOptionChange(option: SortOption) {
+        _state.value = _state.value.copy(sortOption = option)
+        applyFilterAndSort()
+    }
+
+    private fun applyFilterAndSort() {
+        val s = _state.value
+        val query = s.searchQuery.trim().lowercase()
+
+        fun String?.containsQuery(): Boolean =
+            query.isNotBlank() && this?.lowercase()?.contains(query) == true
+
+        when (s.selectedType) {
+            EntityType.CHARACTERS -> {
+                val base = s.allCharacters
+                val filtered = if (query.isBlank()) {
+                    base
+                } else {
+                    base.filter { ch ->
+                        ch.name.containsQuery() ||
+                                ch.description.containsQuery()
+                    }
+                }
+                val sorted = when (s.sortOption) {
+                    SortOption.NAME_ASC  -> filtered.sortedBy { it.name.lowercase() }
+                    SortOption.NAME_DESC -> filtered.sortedByDescending { it.name.lowercase() }
+                }
+                _state.value = s.copy(characters = sorted)
+            }
+
+            EntityType.EVENTS -> {
+                val base = s.allEvents
+                val filtered = if (query.isBlank()) {
+                    base
+                } else {
+                    base.filter { ev ->
+                        ev.name.containsQuery() ||
+                                ev.location.containsQuery() ||
+                                ev.description.containsQuery()
+                    }
+                }
+                val sorted = when (s.sortOption) {
+                    SortOption.NAME_ASC  -> filtered.sortedBy { it.name.lowercase() }
+                    SortOption.NAME_DESC -> filtered.sortedByDescending { it.name.lowercase() }
+                }
+                _state.value = s.copy(events = sorted)
+            }
+
+            EntityType.RELATIONS -> {
+                val base = s.allRelations
+                val filtered = if (query.isBlank()) {
+                    base
+                } else {
+                    base.filter { rel ->
+                        rel.name.containsQuery() ||
+                                rel.relation_type.containsQuery() ||
+                                rel.description.containsQuery()
+                    }
+                }
+                val sorted = when (s.sortOption) {
+                    SortOption.NAME_ASC  -> filtered.sortedBy { it.name.lowercase() }
+                    SortOption.NAME_DESC -> filtered.sortedByDescending { it.name.lowercase() }
+                }
+                _state.value = s.copy(relations = sorted)
+            }
+        }
+    }
+
 }

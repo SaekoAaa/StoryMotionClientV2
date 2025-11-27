@@ -14,14 +14,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.storyvision_client.data.entities.CharacterDto
-
 @Composable
 fun EntityContent(
     state: LibraryUiState,
     onCharacterClick: (CharacterDto) -> Unit,
-    onLoadMore: () -> Unit
+    onLoadMore: () -> Unit,
+    onSearchChange: (String) -> Unit,
+    onSortChange: (SortOption) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
+
+        SearchAndSortBar(
+            query = state.searchQuery,
+            sortOption = state.sortOption,
+            onQueryChange = onSearchChange,
+            onSortChange = onSortChange
+        )
+
+        Spacer(Modifier.height(8.dp))
+
         when (state.selectedType) {
             EntityType.CHARACTERS -> CharactersList(
                 characters = state.characters,
@@ -44,3 +55,4 @@ fun EntityContent(
         }
     }
 }
+
